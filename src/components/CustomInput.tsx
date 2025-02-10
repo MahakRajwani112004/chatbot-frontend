@@ -1,4 +1,4 @@
-import { Input } from "@heroui/react";
+import { Textarea } from "@heroui/react";
 
 interface ICustomInputProps {
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
@@ -6,28 +6,17 @@ interface ICustomInputProps {
   className?: string;
   value?: string;
   placeholder?: string;
-  type?:
-    | "text"
-    | "search"
-    | "url"
-    | "tel"
-    | "email"
-    | "password"
-    | "file"
-    | "date"
-    | "time";
 }
 
 const CustomInput = (props: ICustomInputProps) => {
-  const { type, onKeyDown, onChange, className, value, placeholder } = props;
+  const { onKeyDown, onChange, className, value, placeholder } = props;
   return (
-    <Input
-      type={type}
+    <Textarea
       onKeyDown={onKeyDown}
       onChange={onChange}
       className={className}
-      value={value}
       placeholder={placeholder}
+      value={value}
     />
   );
 };

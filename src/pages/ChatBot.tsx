@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import AxiosService from "@/services/AxiosService";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
+import MicroPhone from "@/components/CustomMicroPhone";
 
 interface IChatBotProps {
   text: string;
@@ -12,6 +13,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<IChatBotProps[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -21,16 +23,22 @@ const Chatbot = () => {
 
     setLoading(true);
     setInput("");
+    setListening(false);
 
     try {
-      const { data } = await AxiosService.post<{ response: string }>(
-        "/generate",
-        {
-          message: input,
-        }
-      );
+      const { data } = await AxiosService.post<{
+        response: string;
+        audio: string;
+      }>("/generate", {
+        message: input,
+      });
       const botMessage: IChatBotProps = { text: data.response, sender: "bot" };
       setMessages((prevMessages) => [...prevMessages, botMessage]);
+
+      if (data.audio) {
+        const audio = new Audio(data.audio);
+        audio.play();
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: IChatBotProps = {
@@ -46,20 +54,18 @@ const Chatbot = () => {
   const renderMessageText = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/);
     return (
-      <div>
+      <span>
         {parts.map((part, index) =>
           /^\*\*(.*?)\*\*$/.test(part) ? (
-            <div key={index}>
-              <strong>{part.replace(/^\*\*(.*?)\*\*$/, "$1")}</strong>
-              <br />
-            </div>
+            <strong key={index}>{part.replace(/^\*\*(.*?)\*\*$/, "$1")}</strong>
           ) : (
             <span key={index}>{part}</span>
           )
         )}
-      </div>
+      </span>
     );
   };
+
   const MessageComponent = useMemo(() => {
     return messages.map((msg, index) => (
       <div
@@ -98,8 +104,7 @@ const Chatbot = () => {
         </div>
         <div className="flex items-center gap-2">
           <CustomInput
-            type="text"
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => !listening && setInput(e.target.value)}
             value={input}
             className="flex-grow rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Type your message..."
@@ -113,6 +118,17 @@ const Chatbot = () => {
           >
             Send
           </CustomButton>
+          <MicroPhone
+            onListeningChange={(isListening) => setListening(isListening)}
+            onTranscript={(transcript) => {
+              if (listening) {
+                setInput(transcript);
+              }
+              if (!listening && transcript) {
+                handleSend();
+              }
+            }}
+          />
         </div>
       </div>
     </div>
