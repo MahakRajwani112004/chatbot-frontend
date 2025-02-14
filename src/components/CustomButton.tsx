@@ -6,12 +6,13 @@ interface ICustomButtonProps {
   className?: string;
   isDisabled?: boolean;
   onPress?: () => void;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const CustomButton = (props: ICustomButtonProps) => {
-  const { children, className, isDisabled, onPress } = props;
+  const { children, className, isDisabled, onPress , type } = props;
   return (
-    <Button className={className} disabled={isDisabled} onPress={onPress}>
+    <Button className={className} disabled={isDisabled} onPress={onPress} type={type}>
       {children}
     </Button>
   );
