@@ -1,11 +1,14 @@
 import { Route, Routes } from "react-router-dom";
-import Chatbot from "./pages/ChatBot";
+import Chatbot from "./module/chatbot/pages/ChatBot";
+import { HttpContextProvider } from "./context/HttpContextProvider";
 
 function App() {
   return (
-    <Routes>
-      <Route element={<Chatbot />} path="/" />
-    </Routes>
+    <HttpContextProvider>
+      <Routes>
+        <Route element={<Chatbot />} path="/" />
+      </Routes>
+    </HttpContextProvider>
   );
 }
 

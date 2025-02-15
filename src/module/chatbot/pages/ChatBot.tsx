@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AxiosService from "@/services/AxiosService";
 import CustomButton from "@/components/CustomButton";
-import CustomInput from "@/components/CustomInput";
 import MicroPhone from "@/components/CustomMicroPhone";
+import ChatHistory from "@/components/ChatHistory";
+import CustomButtonIcon from "@/components/CustomButtonIcon";
+import {PencilIcon } from "@/assets/icon";
+import CustomTextArea from "@/components/CustomTextArea";
+import useChatBotApis from "@/api/chatbot/useChatBotApis";
+import { Chat } from "@/types/common";
 
 interface IChatBotProps {
   text: string;
@@ -10,10 +15,31 @@ interface IChatBotProps {
 }
 
 const Chatbot = () => {
+  //Apis
+  const { getAllChatHistory } = useChatBotApis();
+
+  //Local State
   const [messages, setMessages] = useState<IChatBotProps[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<Chat[]>([]);
+
+  // Effects
+  const fetchChatHistory = useCallback(async () => {
+    const { response, success } = await getAllChatHistory();
+    if (!success || !response) return;
+    const formattedData: Chat[] = response.map((chat: Chat) => ({
+      chatId: chat.chatId,
+      messages: chat.messages,
+    }));
+    setChatHistory(formattedData);
+  }, []);
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [fetchChatHistory]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -25,13 +51,21 @@ const Chatbot = () => {
     setInput("");
     setListening(false);
 
+    //TODO need to change this , call api from api's folder
     try {
       const { data } = await AxiosService.post<{
         response: string;
         audio: string;
+        chatId: string;
       }>("/generate", {
         message: input,
+        chatId: chatId,
       });
+
+      if (!chatId) {
+        setChatId(data.chatId);
+      }
+
       const botMessage: IChatBotProps = { text: data.response, sender: "bot" };
       setMessages((prevMessages) => [...prevMessages, botMessage]);
 
@@ -66,6 +100,17 @@ const Chatbot = () => {
     );
   };
 
+  const handleChatSelection = async (selectedChatId: string | null) => {
+    setChatId(selectedChatId);
+    //TODO need to change this api calling from api folder
+    try {
+      const { data } = await AxiosService.get(`/chats/${selectedChatId}`);
+      setMessages(data);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+    }
+  };
+
   const MessageComponent = useMemo(() => {
     return messages.map((msg, index) => (
       <div
@@ -85,8 +130,21 @@ const Chatbot = () => {
   }, [messages, renderMessageText]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-whitesmoke p-4 shadow-lg">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-4">
+    <div className="flex min-h-screen bg-whitesmoke  shadow-lg">
+      <div className="w-1/4 bg-gray-100  overflow-y-auto">
+        <ChatHistory
+          chatHistory={chatHistory}
+          activeChatId={chatId}
+          onSelectChat={handleChatSelection}
+        />
+      </div>
+      <div className="w-3/4 bg-white rounded-lg shadow-md p-4">
+        <CustomButtonIcon
+          children={<PencilIcon />}
+          onPress={() => {
+            setMessages([]);
+          }}
+        />
         <h1 className="font-bold text-center">Have a chat with our Bot!</h1>
         <div className="overflow-y-auto mb-4 border-b border-gray-200 p-4">
           {MessageComponent}
@@ -103,7 +161,7 @@ const Chatbot = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <CustomInput
+          <CustomTextArea
             onChange={(e) => !listening && setInput(e.target.value)}
             value={input}
             className="flex-grow rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
