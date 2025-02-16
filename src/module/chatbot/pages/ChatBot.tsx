@@ -154,21 +154,6 @@ const Chatbot = () => {
         <h1 className="font-bold text-center">Have a chat with our Bot!</h1>
         <div className="max-w-2xl mb-4 border-b border-gray-200 p-4">
           {MessageComponent}
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`mb-2 p-2 rounded-md ${
-                msg.sender === "user"
-                  ? "bg-blue-100 text-right"
-                  : "bg-gray-100 text-left"
-              }`}
-            >
-              <strong className="block text-sm text-gray-600">
-                {msg.sender.toUpperCase()}
-              </strong>
-              {msg.text}
-            </div>
-          ))}
           {loading && (
             <div className="flex items-center text-gray-500">
               <span className="mr-2">Bot is typing</span>
