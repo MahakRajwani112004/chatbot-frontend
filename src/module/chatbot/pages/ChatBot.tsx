@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import CustomButton from "@/components/CustomButton";
-import MicroPhone from "@/components/CustomMicroPhone";
-import ChatHistory from "@/components/ChatHistory";
-import CustomButtonIcon from "@/components/CustomButtonIcon";
 import { PencilIcon } from "@/assets/icon";
-import CustomTextArea from "@/components/CustomTextArea";
 import useChatBotApis from "@/api/chatbot/useChatBotApis";
 import { Chat, ICreateChatRequestBody } from "@/types/common";
+import CustomButton from "@/components/CustomButton";
+import CustomButtonIcon from "@/components/CustomButtonIcon";
+import CustomMicroPhone from "@/components/CustomMicroPhone";
+import CustomTextArea from "@/components/CustomTextArea";
+import ChatHistory from "@/components/ChatHistory";
 
 interface IChatBotProps {
   text: string;
