@@ -54,14 +54,20 @@ const Chatbot = () => {
       chatId: chatId || undefined,
     };
 
-    const { success, response } = await createChat(requestBody);
-    console.log("Response", response);
+    try {
+      const { success, response } = await createChat(requestBody);
+      if (!success || !response) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: "Unable to get a response. Please try again later.",
+            sender: "bot",
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
 
-    if (!success || !response) {
-      return;
-    }
-
-    if (response) {
       const { response: botText, audio, chatId: newChatId } = response;
       if (!chatId && newChatId) {
         setChatId(newChatId);
@@ -74,45 +80,46 @@ const Chatbot = () => {
         const audioElement = new Audio(audio);
         audioElement.play();
       }
-    } else {
-      const errorMessage: IChatBotProps = {
-        text: "Sorry, something went wrong.",
-        sender: "bot",
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    } catch (error) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          text: "An unexpected error occurred. Please try again later.",
+          sender: "bot",
+        },
+      ]);
     }
     setLoading(false);
   }, [input, chatId]);
 
-  const renderMessageText = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/);
-    return (
-      <span>
-        {parts.map((part, index) =>
-          /^\*\*(.*?)\*\*$/.test(part) ? (
-            <strong key={index}>{part.replace(/^\*\*(.*?)\*\*$/, "$1")}</strong>
-          ) : (
-            <span key={index}>{part}</span>
-          )
-        )}
-      </span>
-    );
-  };
+  const renderMessageText = useMemo(
+    () => (text: string) => {
+      const parts = text.split(/(\*\*.*?\*\*)/);
+      return (
+        <span>
+          {parts.map((part, index) =>
+            /^\*\*(.*?)\*\*$/.test(part) ? (
+              <strong key={index}>
+                {part.replace(/^\*\*(.*?)\*\*$/, "$1")}
+              </strong>
+            ) : (
+              <span key={index}>{part}</span>
+            )
+          )}
+        </span>
+      );
+    },
+    []
+  );
 
   const handleSelection = useCallback(
     async (selectedChatId: string | null) => {
       if (!selectedChatId) return;
+
+      const { success, response } = await getChatById(selectedChatId);
+      if (!success || !response) return;
       setChatId(selectedChatId);
-
-      try {
-        const { success, response } = await getChatById(selectedChatId);
-        if (!success || !response) return;
-
-        console.log(response);
-        setMessages(response);
-      } catch (error) {
-        console.error("Error fetching chat messages:", error);
-      }
+      setMessages(response);
     },
     [getChatById]
   );
@@ -136,7 +143,7 @@ const Chatbot = () => {
   }, [messages, renderMessageText]);
 
   return (
-    <div className="flex min-h-screen bg-whitesmoke  shadow-lg gap-32">
+    <div className="flex min-h-screen bg-black  shadow-lg gap-32">
       <div className="w-1/4 bg-gray-100  overflow-y-auto">
         <ChatHistory
           chatHistory={chatHistory}
