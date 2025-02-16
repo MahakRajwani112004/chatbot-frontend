@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Formik, Form, FormikProps } from "formik";
 import { PhoneIcon } from "@/assets/icon";
 import CustomCard from "../CustomCard";
@@ -5,8 +6,9 @@ import CustomInput from "../CustomInput";
 import CustomTextArea from "../CustomTextArea";
 import CustomButton from "../CustomButton";
 import showToast from "@/utils/showtoast";
-import AxiosService from "@/services/AxiosService";
 import { GetCallSchema } from "./getCall.types";
+import { GetCallvalidationSchema } from "./getCall.validation";
+import useCallAPis from "@/api/call/useCallApis";
 
 const initialValues: GetCallSchema = {
   name: "",
@@ -15,35 +17,37 @@ const initialValues: GetCallSchema = {
 };
 
 const GetCall = () => {
-  const handleSubmit = async (
-    values: GetCallSchema,
-    { resetForm }: { resetForm: () => void }
-  ) => {
-    console.log("values", values);
-    resetForm();
+  //Apis
+  const { initiateCall } = useCallAPis();
+  const handleSubmit = useCallback(
+    async (values: GetCallSchema, { resetForm }: { resetForm: () => void }) => {
+      resetForm();
 
-  //TODO need to shift this into api folder 
-    try {
-      const response = await AxiosService.post("/make-call", values);
-      console.log(response);
-       showToast("Call Initiated ! Check your phone" , 'success');
-    } catch (error) {
-      console.error(error);
-       showToast("Something went wrong" , 'error');
-    }
-  };
+      const { success, errorMsg } = await initiateCall(values);
+      if (success) {
+        showToast("Call Initiated ! Check your phone", "success");
+      } else {
+        showToast(`Something went wrong ${errorMsg}`, "error");
+      }
+    },
+    [initiateCall]
+  );
 
   return (
     <CustomCard className="bg-lightpurple">
       <div className="flex gap-5 font-bold">
         <h1>Talk with our bot via phone</h1>
-         <PhoneIcon /> 
+        <PhoneIcon />
       </div>
 
       <h1>Seems Interesting!</h1>
       <h1>Fill out some details to get a call immediately</h1>
 
-      <Formik initialValues={initialValues} onSubmit={handleSubmit}>
+      <Formik
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        validationSchema={GetCallvalidationSchema}
+      >
         {({
           handleChange,
           values,
@@ -77,10 +81,10 @@ const GetCall = () => {
             />
 
             <CustomButton
-               type="submit"
+              type="submit"
               className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
             >
-              Call Now <PhoneIcon /> 
+              Call Now <PhoneIcon />
             </CustomButton>
           </Form>
         )}

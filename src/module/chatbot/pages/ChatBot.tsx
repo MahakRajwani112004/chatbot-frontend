@@ -63,7 +63,6 @@ const Chatbot = () => {
 
     if (response) {
       const { response: botText, audio, chatId: newChatId } = response;
-      console.log(botText, audio, newChatId);
       if (!chatId && newChatId) {
         setChatId(newChatId);
       }
