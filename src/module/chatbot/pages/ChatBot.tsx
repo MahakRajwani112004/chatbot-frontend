@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AxiosService from "@/services/AxiosService";
 import CustomButton from "@/components/CustomButton";
 import MicroPhone from "@/components/CustomMicroPhone";
 import ChatHistory from "@/components/ChatHistory";
 import CustomButtonIcon from "@/components/CustomButtonIcon";
-import {PencilIcon } from "@/assets/icon";
+import { PencilIcon } from "@/assets/icon";
 import CustomTextArea from "@/components/CustomTextArea";
 import useChatBotApis from "@/api/chatbot/useChatBotApis";
-import { Chat } from "@/types/common";
+import { Chat, ICreateChatRequestBody } from "@/types/common";
 
 interface IChatBotProps {
   text: string;
@@ -16,7 +15,7 @@ interface IChatBotProps {
 
 const Chatbot = () => {
   //Apis
-  const { getAllChatHistory } = useChatBotApis();
+  const { getAllChatHistory, createChat, getChatById } = useChatBotApis();
 
   //Local State
   const [messages, setMessages] = useState<IChatBotProps[]>([]);
@@ -41,49 +40,50 @@ const Chatbot = () => {
     fetchChatHistory();
   }, [fetchChatHistory]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim()) return;
 
     const userMessage: IChatBotProps = { text: input, sender: "user" };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-
     setLoading(true);
     setInput("");
     setListening(false);
 
-    //TODO need to change this , call api from api's folder
-    try {
-      const { data } = await AxiosService.post<{
-        response: string;
-        audio: string;
-        chatId: string;
-      }>("/generate", {
-        message: input,
-        chatId: chatId,
-      });
+    const requestBody: ICreateChatRequestBody = {
+      message: input,
+      chatId: chatId || undefined,
+    };
 
-      if (!chatId) {
-        setChatId(data.chatId);
+    const { success, response } = await createChat(requestBody);
+    console.log("Response", response);
+
+    if (!success || !response) {
+      return;
+    }
+
+    if (response) {
+      const { response: botText, audio, chatId: newChatId } = response;
+      console.log(botText, audio, newChatId);
+      if (!chatId && newChatId) {
+        setChatId(newChatId);
       }
 
-      const botMessage: IChatBotProps = { text: data.response, sender: "bot" };
+      const botMessage: IChatBotProps = { text: botText, sender: "bot" };
       setMessages((prevMessages) => [...prevMessages, botMessage]);
 
-      if (data.audio) {
-        const audio = new Audio(data.audio);
-        audio.play();
+      if (audio) {
+        const audioElement = new Audio(audio);
+        audioElement.play();
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } else {
       const errorMessage: IChatBotProps = {
         text: "Sorry, something went wrong.",
         sender: "bot",
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
     }
-
     setLoading(false);
-  };
+  }, [input, chatId]);
 
   const renderMessageText = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/);
@@ -100,16 +100,23 @@ const Chatbot = () => {
     );
   };
 
-  const handleChatSelection = async (selectedChatId: string | null) => {
-    setChatId(selectedChatId);
-    //TODO need to change this api calling from api folder
-    try {
-      const { data } = await AxiosService.get(`/chats/${selectedChatId}`);
-      setMessages(data);
-    } catch (error) {
-      console.error("Error fetching chat messages:", error);
-    }
-  };
+  const handleSelection = useCallback(
+    async (selectedChatId: string | null) => {
+      if (!selectedChatId) return;
+      setChatId(selectedChatId);
+
+      try {
+        const { success, response } = await getChatById(selectedChatId);
+        if (!success || !response) return;
+
+        console.log(response);
+        setMessages(response);
+      } catch (error) {
+        console.error("Error fetching chat messages:", error);
+      }
+    },
+    [getChatById]
+  );
 
   const MessageComponent = useMemo(() => {
     return messages.map((msg, index) => (
@@ -117,7 +124,7 @@ const Chatbot = () => {
         key={index}
         className={`mb-2 p-2 rounded-md ${
           msg.sender === "user"
-            ? "bg-blue-100 text-right"
+            ? "bg-blue-950 text-right"
             : "bg-gray-100 text-left"
         }`}
       >
@@ -130,15 +137,15 @@ const Chatbot = () => {
   }, [messages, renderMessageText]);
 
   return (
-    <div className="flex min-h-screen bg-whitesmoke  shadow-lg">
+    <div className="flex min-h-screen bg-whitesmoke  shadow-lg gap-32">
       <div className="w-1/4 bg-gray-100  overflow-y-auto">
         <ChatHistory
           chatHistory={chatHistory}
           activeChatId={chatId}
-          onSelectChat={handleChatSelection}
+          onSelectChat={handleSelection}
         />
       </div>
-      <div className="w-3/4 bg-white rounded-lg shadow-md p-4">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <CustomButtonIcon
           children={<PencilIcon />}
           onPress={() => {
@@ -146,9 +153,23 @@ const Chatbot = () => {
           }}
         />
         <h1 className="font-bold text-center">Have a chat with our Bot!</h1>
-        <div className="overflow-y-auto mb-4 border-b border-gray-200 p-4">
+        <div className="max-w-2xl mb-4 border-b border-gray-200 p-4">
           {MessageComponent}
-
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`mb-2 p-2 rounded-md ${
+                msg.sender === "user"
+                  ? "bg-blue-100 text-right"
+                  : "bg-gray-100 text-left"
+              }`}
+            >
+              <strong className="block text-sm text-gray-600">
+                {msg.sender.toUpperCase()}
+              </strong>
+              {msg.text}
+            </div>
+          ))}
           {loading && (
             <div className="flex items-center text-gray-500">
               <span className="mr-2">Bot is typing</span>
