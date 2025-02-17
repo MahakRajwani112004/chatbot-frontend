@@ -71,7 +71,10 @@ const GetCall = () => {
               placeholder="Enter phone number"
               name="phone"
               value={values.phone}
+              onBlur={handleBlur}
               onChange={handleChange}
+              isInvalid={!!(touched.phone && errors.phone)}
+              errorMessage={errors.phone}
             />
 
             <CustomTextArea
@@ -79,6 +82,8 @@ const GetCall = () => {
               value={values.task}
               placeholder="What do you want to ask about?"
               onChange={handleChange}
+              isInvalid={!!(touched.task && errors.task)}
+              errorMessage={errors.task}
             />
 
             <CustomButton

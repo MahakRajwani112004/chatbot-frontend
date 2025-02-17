@@ -146,10 +146,11 @@ const Chatbot = () => {
           onSelectChat={handleSelection}
         />
       </div>
-      <div className="w-full  sm:w-3/4 bg-white rounded-lg shadow-md p-4">
+      <div className="w-full  sm:w-3/4 bg-white rounded-lg shadow-md p-4 ">
         <CustomButtonIcon
           children={<PencilIcon />}
           onPress={() => {
+            setChatId(null);
             setMessages([]);
           }}
         />

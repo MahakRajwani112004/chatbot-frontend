@@ -40,15 +40,13 @@ const CustomInput = (props: ICustomInputProps) => {
     <Input
       classNames={{
         base: cn(className),
-        label: cn(isInvalid && "text-red"),
-        errorMessage: "text-red font-medium text-start",
-        input: cn({ "text-red": isInvalid }),
       }}
       label={label}
       name={name}
       type={type}
       onBlur={onBlur}
       errorMessage={errorMessage}
+      isInvalid={isInvalid}
       onChange={onChange}
       className={className}
       placeholder={placeholder}
