@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PencilIcon } from "@/assets/icon";
 import useChatBotApis from "@/api/chatbot/useChatBotApis";
-import { Chat, ICreateChatRequestBody } from "@/types/common";
+import { Chat, IChatBotProps, ICreateChatRequestBody } from "@/types/common";
 import CustomButton from "@/components/CustomButton";
 import CustomButtonIcon from "@/components/CustomButtonIcon";
 import CustomMicroPhone from "@/components/CustomMicroPhone";
 import CustomTextArea from "@/components/CustomTextArea";
 import ChatHistory from "@/components/ChatHistory";
-
-interface IChatBotProps {
-  text: string;
-  sender: "user" | "bot";
-}
 
 const Chatbot = () => {
   //Apis
@@ -42,11 +37,11 @@ const Chatbot = () => {
 
   const handleSend = useCallback(async () => {
     if (!input.trim()) return;
-
+    setInput("");
     const userMessage: IChatBotProps = { text: input, sender: "user" };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setLoading(true);
-    setInput("");
+
     setListening(false);
 
     const requestBody: ICreateChatRequestBody = {
@@ -130,7 +125,7 @@ const Chatbot = () => {
         key={index}
         className={`mb-2 p-2 rounded-md ${
           msg.sender === "user"
-            ? "bg-blue-950 text-right"
+            ? "bg-blue-100 text-right"
             : "bg-gray-100 text-left"
         }`}
       >
@@ -143,15 +138,15 @@ const Chatbot = () => {
   }, [messages, renderMessageText]);
 
   return (
-    <div className="flex min-h-screen bg-black  shadow-lg gap-32">
-      <div className="w-1/4 bg-gray-100  overflow-y-auto">
+    <div className="flex min-h-screen  shadow-lg ">
+      <div className="w-1/4 bg-gray-100  overflow-y-auto hidden sm:block">
         <ChatHistory
           chatHistory={chatHistory}
           activeChatId={chatId}
           onSelectChat={handleSelection}
         />
       </div>
-      <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="w-full  sm:w-3/4 bg-white rounded-lg shadow-md p-4">
         <CustomButtonIcon
           children={<PencilIcon />}
           onPress={() => {
@@ -159,7 +154,7 @@ const Chatbot = () => {
           }}
         />
         <h1 className="font-bold text-center">Have a chat with our Bot!</h1>
-        <div className="max-w-2xl mb-4 border-b border-gray-200 p-4">
+        <div className=" mb-4 border-b border-gray-200 p-4">
           {MessageComponent}
           {loading && (
             <div className="flex items-center text-gray-500">
@@ -178,9 +173,13 @@ const Chatbot = () => {
             value={input}
             className="flex-grow rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Type your message..."
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
           />
-
           <CustomButton
             onPress={handleSend}
             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
@@ -188,7 +187,7 @@ const Chatbot = () => {
           >
             Send
           </CustomButton>
-          <MicroPhone
+          <CustomMicroPhone
             onListeningChange={(isListening) => setListening(isListening)}
             onTranscript={(transcript) => {
               if (listening) {

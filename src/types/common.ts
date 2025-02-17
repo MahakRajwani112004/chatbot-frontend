@@ -14,7 +14,7 @@ export interface Message {
 
 export interface Chat {
   chatId: string;
-  messages: Message[];
+  messages: IChatBotProps[];
 }
 export interface ICreateChatRequestBody {
   message: string;
