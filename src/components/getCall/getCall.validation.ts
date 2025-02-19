@@ -4,6 +4,6 @@ export const GetCallvalidationSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
   phone: Yup.string()
     .required("Phone Number is required")
-    .matches(/^\d{10}$/, "Phone must be 10 digits"),
+    .matches(/^\+91\d{10}$/, "Phone must start with +91 followed by 10 digits"),
   task: Yup.string().required("Please enter a query"),
 });
