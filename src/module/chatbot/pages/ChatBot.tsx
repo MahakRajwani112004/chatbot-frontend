@@ -105,25 +105,29 @@ const Chatbot = () => {
     setLoading(false);
   }, [input, chatId]);
 
-  const renderMessageText = useMemo(
-    () => (text: string) => {
-      const parts = text.split(/(\*\*.*?\*\*)/);
-      return (
-        <span>
-          {parts.map((part, index) =>
-            /^\*\*(.*?)\*\*$/.test(part) ? (
-              <strong key={index}>
-                {part.replace(/^\*\*(.*?)\*\*$/, "$1")}
-              </strong>
-            ) : (
-              <span key={index}>{part}</span>
-            )
-          )}
-        </span>
+  const renderMessage =useMemo(
+    () =>  (text: string) => {
+    const parts = text.split("\n").map((line, index) => {
+      const boldRegex = /\*\*(.*?)\*\*/g;
+      const lineWithBold = line.split(boldRegex).map((part, idx) =>
+        idx % 2 === 1 ? (
+          <strong key={idx} className="font-semibold text-black">
+            {part}
+          </strong>
+        ) : (
+          part
+        )
       );
-    },
-    []
-  );
+      return (
+        <p key={index} className="mb-1">
+          {lineWithBold}
+        </p>
+      );
+    });
+
+    return parts;
+  },[])
+
 
   const handleSelection = useCallback(
     async (selectedChatId: string | null) => {
@@ -160,10 +164,10 @@ const Chatbot = () => {
         <strong className="block text-sm text-gray-600">
           {msg.sender.toUpperCase()}
         </strong>
-        {renderMessageText(msg.text)}
+        {renderMessage(msg.text)}
       </div>
     ));
-  }, [messages, renderMessageText]);
+  }, [messages, renderMessage]);
 
   return (
     <div className="flex min-h-screen  shadow-lg ">
