@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PencilIcon } from "@/assets/icon";
+import { LinkIcon, PencilIcon } from "@/assets/icon";
 import useChatBotApis from "@/api/chatbot/useChatBotApis";
-import { Chat, IChatBotProps, ICreateChatRequestBody } from "@/types/common";
+import {
+  Chat,
+  IChatBotProps,
+  ICreateChatRequestBody,
+  IDocument,
+} from "@/types/common";
 import CustomButton from "@/components/CustomButton";
 import CustomButtonIcon from "@/components/CustomButtonIcon";
 import CustomMicroPhone from "@/components/CustomMicroPhone";
 import CustomTextArea from "@/components/CustomTextArea";
 import ChatHistory from "@/components/ChatHistory";
+import AddDocumentModal from "@/components/modals/AddDocumentModal";
 
 const Chatbot = () => {
   //Apis
@@ -19,6 +25,11 @@ const Chatbot = () => {
   const [listening, setListening] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
+  const [isOpen, setIsModalOpen] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [uploadedDocument, setUploadedDocument] = useState<IDocument | null>(
+    null
+  );
 
   // Effects
   const fetchChatHistory = useCallback(async () => {
@@ -38,6 +49,7 @@ const Chatbot = () => {
   const handleSend = useCallback(async () => {
     if (!input.trim()) return;
     setInput("");
+    setSelectedFileName("");
     const userMessage: IChatBotProps = { text: input, sender: "user" };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setLoading(true);
@@ -47,6 +59,12 @@ const Chatbot = () => {
     const requestBody: ICreateChatRequestBody = {
       message: input,
       chatId: chatId || undefined,
+      document: uploadedDocument
+        ? {
+            documentPath: uploadedDocument.documentPath,
+            mimeType: uploadedDocument.mimeType,
+          }
+        : undefined,
     };
 
     try {
@@ -118,7 +136,17 @@ const Chatbot = () => {
     },
     [getChatById]
   );
+  //Custom Helper function
+  const toggleModal = () => {
+    setIsModalOpen((prev) => !prev);
+  };
+  const handleFileSelected = (fileName: string) => {
+    setSelectedFileName(fileName);
+  };
 
+  const handleDocumentUploaded = (documentPath: string, mimeType: string) => {
+    setUploadedDocument({ documentPath, mimeType });
+  };
   const MessageComponent = useMemo(() => {
     return messages.map((msg, index) => (
       <div
@@ -172,7 +200,7 @@ const Chatbot = () => {
           <CustomTextArea
             onChange={(e) => !listening && setInput(e.target.value)}
             value={input}
-            className="flex-grow rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-grow focus:outline-none "
             placeholder="Type your message..."
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -181,6 +209,17 @@ const Chatbot = () => {
               }
             }}
           />
+          <CustomButtonIcon
+            children={<LinkIcon />}
+            onPress={toggleModal}
+            className=" m-3"
+          />
+          <AddDocumentModal
+            isOpen={isOpen}
+            onClose={toggleModal}
+            onFileSelected={handleFileSelected}
+            onDocumentUploaded={handleDocumentUploaded}
+          />
           <CustomButton
             onPress={handleSend}
             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
@@ -188,6 +227,7 @@ const Chatbot = () => {
           >
             Send
           </CustomButton>
+
           <CustomMicroPhone
             onListeningChange={(isListening) => setListening(isListening)}
             onTranscript={(transcript) => {
@@ -200,6 +240,7 @@ const Chatbot = () => {
             }}
           />
         </div>
+        {selectedFileName && <p>Selected File Name: {selectedFileName}</p>}
       </div>
     </div>
   );
